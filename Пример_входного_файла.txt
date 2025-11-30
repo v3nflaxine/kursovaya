@@ -1,0 +1,4 @@
+document.pdf;512;15:30:00
+image.jpg;1024;16:45:00
+setup.exe;4096;10:15:00
+report.docx;256;11:20:00
