@@ -1,224 +1,112 @@
 #include <iostream>
+#include <string>
 #include <Windows.h>
-#include "MagneticTape.h" 
-#include "Constants.h"    
+#include "MagneticTape.h"
 
-using namespace std;
+using namespace std; // Допустимо только в .cpp
+
+bool isValidNumber(const string& s) {
+    if (s.empty()) return false;
+    for (char c : s) if (!isdigit(c)) return false;
+    return true;
+}
 
 void pressAnyKey() {
-    cout << "\nНажмите любую клавишу для продолжения...";
-    cin.ignore();
+    cout << "\nНажмите Enter для продолжения...";
+    cin.ignore(cin.rdbuf()->in_avail());
     cin.get();
 }
 
 int main() {
     SetConsoleCP(1251);
     SetConsoleOutputCP(1251);
-    setlocale(LC_ALL, "ru");
 
     MagneticTape tape;
-    int choice = 0;
+    string input;
 
     while (true) {
         system("cls");
         cout << programmInfo << endl;
-
-        for (int i = 0; i < 9; i++) {
-            cout << choses[i] << endl;
-        }
-
-        cout << "\nВыберите пункт меню: ";
-        string input;
+        for (const auto& item : choses) cout << item << endl;
+        cout << "\nВыберите пункт: ";
         cin >> input;
 
-        if (!tape.publicIsValidInput(input, true)) {
+        if (!isValidNumber(input)) {
             cout << errors[1] << endl;
             pressAnyKey();
             continue;
         }
 
-        if (input == "exit") break;
-        choice = tape.publicStrToInt(input);
+        int choice = stoi(input);
+        if (choice == 0) break;
 
         switch (choice) {
-        case 1: { // Добавить в конец
-            system("cls");
-            string name, sizeStr, time;
-
-            cout << "Введите имя файла: ";
-            cin >> name;
-            cout << "Введите размер (Кб): ";
-            cin >> sizeStr;
-            cout << "Введите время создания: ";
-            cin >> time;
-
-            if (!tape.publicIsValidInput(sizeStr, true)) {
-                cout << errors[1] << endl;
-                pressAnyKey();
-                break;
+        case 1: { // Добавление
+            string n, s, t;
+            cout << "Имя: "; cin >> n;
+            cout << "Размер (Кб): "; cin >> s;
+            cout << "Время: "; cin >> t;
+            if (isValidNumber(s)) {
+                tape.addToTail(n, stoi(s), t);
+                cout << "Добавлено.";
             }
-
-            tape.addToTail(name, tape.publicStrToInt(sizeStr), time);
-            cout << "Запись добавлена." << endl;
-            pressAnyKey();
+            else cout << errors[1];
             break;
         }
-        case 2: { // Вставка по индексу
-            system("cls");
-            if (tape.isEmpty()) {
-                cout << "Список пуст. Добавляем первый элемент." << endl;
+        case 2: { // Вставка
+            string idx, n, s, t;
+            cout << "Позиция (1-" << tape.getCount() + 1 << "): "; cin >> idx;
+            if (!isValidNumber(idx)) { cout << errors[1]; break; }
+            cout << "Имя: "; cin >> n;
+            cout << "Размер: "; cin >> s;
+            cout << "Время: "; cin >> t;
+            if (isValidNumber(s)) {
+                if (!tape.insertAt(stoi(idx), n, stoi(s), t)) cout << errors[2];
+                else cout << "Вставлено.";
             }
-            else {
-                tape.display();
-            }
-
-            string idxStr, name, sizeStr, time;
-            cout << "\nВведите позицию для вставки (1-" << tape.getCount() + 1 << "): ";
-            cin >> idxStr;
-
-            if (!tape.publicIsValidInput(idxStr, true)) {
-                cout << errors[1] << endl;
-                pressAnyKey();
-                break;
-            }
-
-            cout << "Введите имя файла: ";
-            cin >> name;
-            cout << "Введите размер (Кб): ";
-            cin >> sizeStr;
-            cout << "Введите время создания: ";
-            cin >> time;
-
-            if (!tape.publicIsValidInput(sizeStr, true)) {
-                cout << errors[1] << endl;
-                pressAnyKey();
-                break;
-            }
-
-            if (tape.insertAt(tape.publicStrToInt(idxStr), name, tape.publicStrToInt(sizeStr), time)) {
-                cout << "Запись успешно вставлена." << endl;
-            }
-            else {
-                cout << errors[2] << endl;
-            }
-            pressAnyKey();
+            else cout << errors[1];
             break;
         }
-        case 3: { // Вывод
-            system("cls");
-            tape.display();
-            pressAnyKey();
-            break;
-        }
+        case 3: tape.display(); break;
         case 4: { // Удаление
-            system("cls");
-            if (tape.isEmpty()) {
-                cout << errors[3] << endl;
-                pressAnyKey();
-                break;
-            }
+            if (tape.isEmpty()) { cout << errors[3]; break; }
             tape.display();
-            cout << "\nВведите номер записи для удаления: ";
-            string idxStr;
-            cin >> idxStr;
-
-            if (!tape.publicIsValidInput(idxStr, true)) {
-                cout << errors[1] << endl;
-                pressAnyKey();
-                break;
+            cout << "Номер для удаления: "; cin >> input;
+            if (isValidNumber(input)) {
+                if (!tape.deleteAt(stoi(input))) cout << errors[2];
             }
-
-            if (tape.deleteAt(tape.publicStrToInt(idxStr))) {
-                cout << "Запись удалена." << endl;
-            }
-            else {
-                cout << errors[2] << endl;
-            }
-            pressAnyKey();
+            else cout << errors[1];
             break;
         }
         case 5: { // Экспорт
-            system("cls");
-            if (tape.isEmpty()) {
-                cout << errors[3] << endl;
-                pressAnyKey();
-                break;
-            }
-            cout << "Введите имя файла для сохранения (без .txt): ";
-            string fname;
-            cin >> fname;
-            if (tape.exportToFile(fname)) {
-                cout << "Успешно сохранено." << endl;
-            }
-            pressAnyKey();
+            cout << "Имя файла: "; cin >> input;
+            if (tape.exportToFile(input)) cout << "Сохранено.";
             break;
         }
         case 6: { // Импорт
-            system("cls");
-            cout << "Введите имя файла для загрузки (без .txt): ";
-            string fname;
-            cin >> fname;
-            if (tape.importFromFile(fname)) {
-                cout << "Данные загружены." << endl;
-            }
-            pressAnyKey();
+            cout << "Имя файла: "; cin >> input;
+            if (tape.importFromFile(input)) cout << "Загружено.";
             break;
         }
         case 7: { // Поиск
-            system("cls");
-            if (tape.isEmpty()) {
-                cout << errors[3] << endl;
-                pressAnyKey();
-                break;
-            }
-            cout << "Искать по:\n1. Имени\n2. Размеру\n3. Времени\nВаш выбор: ";
-            string typeStr;
-            cin >> typeStr;
-
-            if (typeStr != "1" && typeStr != "2" && typeStr != "3") {
-                cout << errors[1] << endl;
-                pressAnyKey();
-                break;
-            }
-
-            cout << "Введите значение для поиска: ";
-            string val;
-            cin >> val;
-
-            tape.search(tape.publicStrToInt(typeStr), val);
-            pressAnyKey();
+            cout << "1. Имя, 2. Размер, 3. Время: "; cin >> input;
+            if (input < "1" || input > "3") { cout << errors[1]; break; }
+            string val; cout << "Значение: "; cin >> val;
+            tape.search(stoi(input), val);
             break;
         }
         case 8: { // Сортировка
-            system("cls");
-            if (tape.isEmpty()) {
-                cout << errors[3] << endl;
-                pressAnyKey();
-                break;
+            cout << "1. Имя, 2. Размер, 3. Время: "; cin >> input;
+            if (input >= "1" && input <= "3") {
+                tape.sort(stoi(input));
+                cout << "Отсортировано.";
             }
-            cout << "Сортировать по:\n1. Имени\n2. Размеру\n3. Времени\nВаш выбор: ";
-            string typeStr;
-            cin >> typeStr;
-            if (typeStr != "1" && typeStr != "2" && typeStr != "3") {
-                cout << errors[1] << endl;
-                pressAnyKey();
-                break;
-            }
-
-            tape.sort(tape.publicStrToInt(typeStr));
-            cout << "Список отсортирован." << endl;
-            pressAnyKey();
+            else cout << errors[1];
             break;
         }
-        case 0: {
-            return 0;
+        default: cout << "Неверный пункт!";
         }
-        default: {
-            cout << "Неверный пункт меню!" << endl;
-            pressAnyKey();
-            break;
-        }
-        }
+        pressAnyKey();
     }
     return 0;
 }
