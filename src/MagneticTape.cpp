@@ -2,32 +2,9 @@
 
 // --- Приватные методы ---
 
-int MagneticTape::strToInt(string data) {
-    int newData = 0;
-    for (int i = 0; i < data.size(); i++) {
-        if (data[i] >= '0' && data[i] <= '9') {
-            newData = newData * 10 + (data[i] - '0');
-        }
-    }
-    return newData;
-}
-
-bool MagneticTape::isValidInput(const string& input, bool isNumber) {
-    if (input.empty()) return false;
-    if (input == "exit") return true;
-
-    if (isNumber) {
-        for (char c : input) {
-            if (c < '0' || c > '9') return false;
-        }
-        return true;
-    }
-    return true;
-}
-
-vector<string> MagneticTape::splitString(const string& str, char delimiter) {
-    vector<string> tokens;
-    string token;
+std::vector<std::string> MagneticTape::splitString(const std::string& str, char delimiter) {
+    std::vector<std::string> tokens;
+    std::string token;
     for (char c : str) {
         if (c == delimiter) {
             if (!token.empty()) {
@@ -45,7 +22,6 @@ vector<string> MagneticTape::splitString(const string& str, char delimiter) {
 
 MagneticTape::TapeNode* MagneticTape::getNodeAtIndex(int index) {
     if (index < 1 || index > count) return nullptr;
-
     TapeNode* current;
     if (index <= count / 2) {
         current = head;
@@ -62,9 +38,7 @@ MagneticTape::TapeNode* MagneticTape::getNodeAtIndex(int index) {
 
 MagneticTape::MagneticTape() : head(nullptr), tail(nullptr), count(0) {}
 
-MagneticTape::~MagneticTape() {
-    clearAll();
-}
+MagneticTape::~MagneticTape() { clearAll(); }
 
 void MagneticTape::clearAll() {
     TapeNode* current = head;
@@ -73,25 +47,17 @@ void MagneticTape::clearAll() {
         current = current->next;
         delete temp;
     }
-    head = nullptr;
-    tail = nullptr;
+    head = tail = nullptr;
     count = 0;
 }
 
-bool MagneticTape::isEmpty() const {
-    return head == nullptr;
-}
+bool MagneticTape::isEmpty() const { return head == nullptr; }
+int MagneticTape::getCount() const { return count; }
 
-int MagneticTape::getCount() const {
-    return count;
-}
-
-void MagneticTape::addToTail(string name, int size, string time) {
+void MagneticTape::addToTail(std::string name, int size, std::string time) {
     TapeNode* newNode = new TapeNode(name, size, time);
-
-    if (head == nullptr) {
-        head = newNode;
-        tail = newNode;
+    if (!head) {
+        head = tail = newNode;
     }
     else {
         tail->next = newNode;
@@ -101,28 +67,22 @@ void MagneticTape::addToTail(string name, int size, string time) {
     count++;
 }
 
-bool MagneticTape::insertAt(int index, string name, int size, string time) {
+bool MagneticTape::insertAt(int index, std::string name, int size, std::string time) {
     if (index < 1 || index > count + 1) return false;
-
     if (index == count + 1) {
         addToTail(name, size, time);
         return true;
     }
 
     TapeNode* newNode = new TapeNode(name, size, time);
-
     if (index == 1) {
         newNode->next = head;
-        if (head != nullptr) {
-            head->prev = newNode;
-        }
+        if (head) head->prev = newNode;
         head = newNode;
-        if (tail == nullptr) tail = newNode;
     }
     else {
         TapeNode* current = getNodeAtIndex(index);
         TapeNode* previous = current->prev;
-
         previous->next = newNode;
         newNode->prev = previous;
         newNode->next = current;
@@ -134,12 +94,10 @@ bool MagneticTape::insertAt(int index, string name, int size, string time) {
 
 bool MagneticTape::deleteAt(int index) {
     if (index < 1 || index > count) return false;
-
     TapeNode* toDelete = getNodeAtIndex(index);
 
-    if (head == tail) {
-        head = nullptr;
-        tail = nullptr;
+    if (toDelete == head && toDelete == tail) {
+        head = tail = nullptr;
     }
     else if (toDelete == head) {
         head = head->next;
@@ -153,7 +111,6 @@ bool MagneticTape::deleteAt(int index) {
         toDelete->prev->next = toDelete->next;
         toDelete->next->prev = toDelete->prev;
     }
-
     delete toDelete;
     count--;
     return true;
@@ -161,142 +118,80 @@ bool MagneticTape::deleteAt(int index) {
 
 void MagneticTape::display() const {
     if (isEmpty()) {
-        cout << errors[3] << endl;
+        std::cout << errors[3] << std::endl;
         return;
     }
-
-    cout << "№\tРазмер(Кб)\tВремя\t\tИмя файла" << endl;
-    cout << "----------------------------------------------------" << endl;
-
+    std::cout << "№\tРазмер(Кб)\tВремя\t\tИмя файла\n" << std::string(52, '-') << std::endl;
     TapeNode* current = head;
-    int i = 1;
-    while (current != nullptr) {
-        cout << i << "\t"
-            << current->sizeKb << "\t\t"
-            << current->createTime << "\t\t"
-            << current->filename << endl;
-        current = current->next;
-        i++;
+    for (int i = 1; current; i++, current = current->next) {
+        std::cout << i << "\t" << current->sizeKb << "\t\t" << current->createTime << "\t\t" << current->filename << std::endl;
     }
-    cout << "----------------------------------------------------" << endl;
 }
 
-bool MagneticTape::exportToFile(const string& filename) {
-    string fullName = filename + ".txt";
-    ofstream file(fullName);
-
-    if (!file.is_open()) {
-        cout << "Ошибка создания файла!" << endl;
-        return false;
+bool MagneticTape::exportToFile(const std::string& filename) {
+    std::ofstream file(filename + ".txt");
+    if (!file.is_open()) return false;
+    for (TapeNode* curr = head; curr; curr = curr->next) {
+        file << curr->filename << ";" << curr->sizeKb << ";" << curr->createTime << "\n";
     }
-
-    TapeNode* current = head;
-    while (current != nullptr) {
-        file << current->filename << ";"
-            << current->sizeKb << ";"
-            << current->createTime << endl;
-        current = current->next;
-    }
-    file.close();
     return true;
 }
 
-bool MagneticTape::importFromFile(const string& filename) {
-    string fullName = filename + ".txt";
-    ifstream file(fullName);
+bool MagneticTape::importFromFile(const std::string& filename) {
+    std::ifstream file(filename + ".txt");
     if (!file.is_open()) {
-        cout << errors[4] << endl;
+        std::cout << errors[4] << std::endl;
         return false;
     }
-
     clearAll();
-
-    string line;
-    while (getline(file, line)) {
-        if (line.empty()) continue;
-
-        vector<string> parts = splitString(line, ';');
+    std::string line;
+    while (std::getline(file, line)) {
+        auto parts = splitString(line, ';');
         if (parts.size() >= 3) {
-            string name = parts[0];
-            int size = strToInt(parts[1]);
-            string time = parts[2];
-            addToTail(name, size, time);
+            try {
+                addToTail(parts[0], std::stoi(parts[1]), parts[2]);
+            }
+            catch (...) { continue; }
         }
     }
-    file.close();
     return true;
 }
 
-void MagneticTape::search(int searchType, string value) {
-    if (isEmpty()) {
-        cout << errors[3] << endl;
-        return;
-    }
-
-    TapeNode* current = head;
+void MagneticTape::search(int searchType, const std::string& value) {
+    if (isEmpty()) return;
+    TapeNode* curr = head;
     bool found = false;
-    int index = 1;
+    for (int i = 1; curr; i++, curr = curr->next) {
+        bool match = false;
+        if (searchType == 1 && curr->filename == value) match = true;
+        else if (searchType == 2 && std::to_string(curr->sizeKb) == value) match = true;
+        else if (searchType == 3 && curr->createTime == value) match = true;
 
-    while (current != nullptr) {
-        bool isMatch = false;
-        if (searchType == 1) {
-            if (current->filename == value) isMatch = true;
-        }
-        else if (searchType == 2) {
-            if (current->sizeKb == strToInt(value)) isMatch = true;
-        }
-        else if (searchType == 3) {
-            if (current->createTime == value) isMatch = true;
-        }
-
-        if (isMatch) {
-            cout << "Найдено на позиции " << index << ": "
-                << current->filename << " (" << current->sizeKb << " Kb, " << current->createTime << ")" << endl;
+        if (match) {
+            std::cout << "Найдено [" << i << "]: " << curr->filename << " (" << curr->sizeKb << " Kb)\n";
             found = true;
         }
-        current = current->next;
-        index++;
     }
-
-    if (!found) cout << errors[5] << endl;
+    if (!found) std::cout << errors[5] << std::endl;
 }
 
 void MagneticTape::sort(int fieldType) {
-    if (head == nullptr || head->next == nullptr) return;
-
+    if (!head || !head->next) return;
     bool swapped;
     do {
         swapped = false;
-        TapeNode* current = head;
+        for (TapeNode* curr = head; curr->next; curr = curr->next) {
+            bool need = false;
+            if (fieldType == 1 && curr->filename > curr->next->filename) need = true;
+            else if (fieldType == 2 && curr->sizeKb > curr->next->sizeKb) need = true;
+            else if (fieldType == 3 && curr->createTime > curr->next->createTime) need = true;
 
-        while (current->next != nullptr) {
-            bool needSwap = false;
-
-            if (fieldType == 1) {
-                if (current->filename > current->next->filename) needSwap = true;
-            }
-            else if (fieldType == 2) {
-                if (current->sizeKb > current->next->sizeKb) needSwap = true;
-            }
-            else if (fieldType == 3) {
-                if (current->createTime > current->next->createTime) needSwap = true;
-            }
-
-            if (needSwap) {
-                swap(current->filename, current->next->filename);
-                swap(current->sizeKb, current->next->sizeKb);
-                swap(current->createTime, current->next->createTime);
+            if (need) {
+                std::swap(curr->filename, curr->next->filename);
+                std::swap(curr->sizeKb, curr->next->sizeKb);
+                std::swap(curr->createTime, curr->next->createTime);
                 swapped = true;
             }
-            current = current->next;
         }
     } while (swapped);
-}
-
-bool MagneticTape::publicIsValidInput(const string& input, bool isNumber) {
-    return isValidInput(input, isNumber);
-}
-
-int MagneticTape::publicStrToInt(const string& data) {
-    return strToInt(data);
 }
